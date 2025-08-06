@@ -1,5 +1,12 @@
+<<<<<<< HEAD:backend/.dockerignore
 .venv
 __pycache__
 *.pyc
 .git
 .gitignore
+=======
+frontend/
+node_modules/
+.git/
+*.log
+>>>>>>> 384549e78ffe693d9a9935ac2587ada92087cd0c:pfp-sticker/backend/.dockerignore
