@@ -1,18 +1,17 @@
 FROM python:3.11-slim
 
-# System deps some image libs may need
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 libglib2.0-0 && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app code
+# Copy the entire backend folder (ensures requirements.txt is included)
 COPY . .
 
-# Render sets $PORT; use it if present, else 8000 locally
+# Now install deps from the copied requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
 ENV PORT=8000
 EXPOSE 8000
 CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}"]
