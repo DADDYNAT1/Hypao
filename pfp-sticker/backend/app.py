@@ -4,7 +4,6 @@ from fastapi.responses import Response, JSONResponse
 from PIL import Image
 from io import BytesIO
 from typing import Optional
-
 from compose import remove_bg, add_outline_and_shadow, place_on_base
 
 app = FastAPI(title="PFP Sticker Composer")
@@ -13,9 +12,12 @@ app = FastAPI(title="PFP Sticker Composer")
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    # Add your deployed frontend origin when you deploy:
-    # "https://your-vercel-app.vercel.app",
+    "https://hypao.vercel.app",      # Your main Vercel deployment
+    "https://*.vercel.app",           # All Vercel preview deployments
+    "https://hypao.fun",              # If you plan to use custom domain
+    "https://www.hypao.fun",          # www version of custom domain
 ]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -23,6 +25,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Optional: Add a root endpoint for easy checking
+@app.get("/")
+def root():
+    return {"message": "PFP Sticker API is running!", "docs": "/docs"}
 
 # -------- New: prepare only the cutout (no placement) --------
 @app.post("/cutout")
@@ -39,7 +46,6 @@ async def cutout(
         src = Image.open(BytesIO(await sticker.read()))
         cut = remove_bg(src)
         cut = add_outline_and_shadow(cut, stroke_px=stroke_px, add_shadow=shadow)
-
         buf = BytesIO()
         cut.save(buf, format="PNG")
         buf.seek(0)
@@ -65,13 +71,10 @@ async def compose(
     try:
         base_img = Image.open(BytesIO(await pfp.read())).convert("RGBA")
         st_img = Image.open(BytesIO(await sticker.read()))
-
         cut = remove_bg(st_img)
         cut = add_outline_and_shadow(cut, stroke_px=stroke_px, add_shadow=shadow)
-
         xy = (x_pct, y_pct) if (x_pct is not None and y_pct is not None) else None
         result = place_on_base(base_img, cut, scale=scale, anchor=anchor, xy_pct=xy)
-
         buf = BytesIO()
         result.save(buf, format="PNG")
         buf.seek(0)
