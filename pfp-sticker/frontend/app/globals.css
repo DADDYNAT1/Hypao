@@ -1,0 +1,190 @@
+/* ---------- Background setup ---------- */
+:root {
+    --site-bg: url('/images/hypaobg.png');
+  
+    /* UI colors */
+    --text: #eaeaea;
+    --muted: #94a3b8;
+    --panel: rgba(23, 26, 33, 0.68);         /* glass card */
+    --panel-border: rgba(36, 41, 56, 0.6);
+    --panel-shadow: 0 8px 30px rgba(0,0,0,.35);
+    --input-bg: rgba(11, 13, 17, 0.75);
+    --input-border: #2a2f3b;
+    --brand: #2563eb;
+  }
+  
+  /* ---------- Base ---------- */
+  * { box-sizing: border-box; }
+  
+  body {
+    margin: 0;
+    font-family: system-ui, Arial, sans-serif;
+    color: var(--text);
+    background: #0f1115;           /* fallback color */
+    min-height: 100vh;
+  }
+  
+  /* Background image + soft overlay (keeps text readable) */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background-image: var(--site-bg);
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    /* subtle dark overlays for contrast */
+    background:
+      radial-gradient(120% 80% at 50% 0%, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0.7) 100%),
+      linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.35) 100%);
+  }
+  
+  /* ---------- Top logo header ---------- */
+  .site-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 18px;          /* smaller top padding */
+    margin-bottom: 8px;
+  }
+  
+  /* Control the logo size here (not via width/height props) */
+  .site-logo {
+    display: block;
+    width: auto !important;
+    height: auto !important;
+  
+    /* Bigger caps */
+    max-width: min(85vw, 1200px);
+    max-height: 200px;
+  
+    object-fit: contain;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,.42));
+  }
+  
+  @media (max-width: 768px) {
+    .site-header { padding-top: 14px; }
+    .site-logo {
+      max-width: min(82vw, 480px);
+      max-height: 96px;
+    }
+  }
+  
+  /* ---------- Layout ---------- */
+  .wrapper { max-width: 960px; margin: 24px auto; padding: 16px; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .col { flex: 1; min-width: 280px; }
+  
+  /* ---------- Cards / panels ---------- */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: var(--panel-shadow);
+    backdrop-filter: blur(6px) saturate(1.05);
+  }
+  
+  /* ---------- Text & helpers ---------- */
+  label { display: block; margin: 8px 0 4px; color: #cbd5e1; }
+  .small { font-size: 12px; color: var(--muted); }
+  hr { border: 0; border-top: 1px solid #2a2f3b; margin: 16px 0; }
+  .controls { display: grid; gap: 10px; }
+  
+  /* ---------- Inputs ---------- */
+  input[type="file"],
+  select,
+  input[type="number"],
+  input[type="range"],
+  button {
+    width: 100%;
+    padding: 10px;
+    background: var(--input-bg);
+    color: var(--text);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+  }
+  
+  /* File input button (WebKit) */
+  input[type="file"]::-webkit-file-upload-button {
+    padding: 8px 10px;
+    border: 1px solid var(--input-border);
+    background: #11151c;
+    color: var(--text);
+    border-radius: 6px;
+    margin-right: 8px;
+    cursor: pointer;
+  }
+  
+  /* Range slider: clean track + round thumb */
+  input[type="range"] {
+    height: 32px;
+    appearance: none;
+    background: transparent;
+    padding: 0;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 8px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 999px;
+  }
+  input[type="range"]::-moz-range-track {
+    height: 8px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 999px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--brand);
+    border: 0;
+    margin-top: -5px; /* centers thumb on track */
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--brand);
+    border: 0;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  }
+  
+  /* ---------- Buttons ---------- */
+  button.primary {
+    background: var(--brand);
+    border-color: var(--brand);
+    cursor: pointer;
+    transition: transform 0.05s ease, filter 0.15s ease;
+  }
+  button.primary:hover { filter: brightness(1.05); }
+  button.primary:active { transform: translateY(1px); }
+  
+  /* ---------- Preview canvas ---------- */
+  .preview {
+    width: 100%;
+    border-radius: 12px;
+    background: rgba(11, 13, 17, 0.6);
+    border: 1px solid var(--input-border);
+    min-height: 300px;
+    display: grid;
+    place-items: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+  
+  /* ---------- Small spacing tweaks on mobile ---------- */
+  @media (max-width: 600px) {
+    .wrapper { padding: 12px; }
+    .card { padding: 14px; }
+  }
+  

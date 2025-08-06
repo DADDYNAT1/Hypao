@@ -1,0 +1,20 @@
+cat > .gitignore << 'EOF'
+# macOS
+.DS_Store
+
+# Node / Next.js
+**/node_modules/
+**/.next/
+**/.vercel/
+**/.env.local
+
+# Python / FastAPI
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.env
+
+# Builds / misc
+dist/
+build/
+EOF
