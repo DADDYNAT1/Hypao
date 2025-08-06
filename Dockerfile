@@ -6,12 +6,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Copy from pfp-sticker folder
-COPY pfp-sticker/requirements.txt ./requirements.txt
+# Copy from root (no more pfp-sticker prefix!)
+COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend from pfp-sticker
-COPY pfp-sticker/backend/ .
+# Copy backend from root
+COPY backend/ .
 
 ENV PORT=8000
 
