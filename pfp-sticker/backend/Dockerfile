@@ -6,18 +6,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install deps inline (no requirements.txt needed)
-RUN pip install --no-cache-dir \
-    "fastapi==0.111.0" \
-    "uvicorn[standard]==0.30.0" \
-    "pillow==10.4.0" \
-    "rembg==2.0.57" \
-    "onnxruntime==1.16.3" \
-    "numpy<2" \
-    "python-multipart==0.0.9"
-
-# Copy app code (this directory must contain app.py, compose.py, etc.)
+# Copy the entire backend folder (includes app.py, compose.py, requirements.txt)
 COPY . .
+
+# Install dependencies AFTER files are copied, so requirements.txt is definitely present
+RUN pip install --no-cache-dir -r requirements.txt
 
 ENV PORT=8000
 EXPOSE 8000
