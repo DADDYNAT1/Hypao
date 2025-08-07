@@ -1,7 +1,11 @@
 from PIL import Image, ImageFilter, ImageOps
 from typing import Tuple
 import numpy as np
-from rembg import remove
+from rembg import remove, new_session
+
+# Use the most precise model for complex game characters
+# isnet-general-use is best for precision, u2netp is lighter but still good
+session = new_session('isnet-general-use')  # Most precise model
 
 def has_transparency(img: Image.Image) -> bool:
     """Check if an image already has transparency (useful alpha channel)."""
@@ -11,10 +15,10 @@ def has_transparency(img: Image.Image) -> bool:
     # Check if alpha channel has any non-255 values (actual transparency)
     return any(px < 255 for px in alpha.getdata())
 
-def remove_bg(img: Image.Image, use_alpha_matting: bool = True) -> Image.Image:
+def remove_bg(img: Image.Image) -> Image.Image:
     """
-    Use rembg to remove background and return RGBA image.
-    Alpha matting helps preserve more detail for complex images.
+    Use rembg with the most precise model and settings for game characters.
+    Automatically handles complex designs like Majora's Mask.
     """
     # Convert to RGBA first
     if img.mode != "RGBA":
@@ -24,22 +28,34 @@ def remove_bg(img: Image.Image, use_alpha_matting: bool = True) -> Image.Image:
     if has_transparency(img):
         return img
     
-    # Use alpha matting for better edge quality and detail preservation
-    if use_alpha_matting:
-        # Alpha matting parameters tuned for preserving character details
-        result = remove(
-            img, 
-            alpha_matting=True,
-            alpha_matting_foreground_threshold=270,  # Higher = keeps more of the subject
-            alpha_matting_background_threshold=0,    # Lower = removes more background
-            alpha_matting_erode_size=0,             # Don't erode, preserve all details
-            only_mask=False
-        )
-    else:
-        # Fallback to simple removal
-        result = remove(img)
+    # Use the precise session with optimized settings
+    # These settings are tuned for maximum precision on game characters
+    result = remove(
+        img,
+        session=session,
+        alpha_matting=True,
+        alpha_matting_foreground_threshold=270,  # High threshold to keep all character details
+        alpha_matting_background_threshold=0,    # Remove all background
+        alpha_matting_erode_size=0,             # No erosion to preserve fine details
+        post_process_mask=True,                  # Clean up the mask for better edges
+        only_mask=False
+    )
     
-    return result.convert("RGBA")
+    # Additional cleanup: remove any semi-transparent pixels that shouldn't be there
+    result = result.convert("RGBA")
+    data = result.getdata()
+    new_data = []
+    
+    for item in data:
+        # If pixel is mostly transparent but not fully, make it fully transparent
+        # This helps with edge artifacts
+        if item[3] < 30:  # Alpha threshold
+            new_data.append((item[0], item[1], item[2], 0))
+        else:
+            new_data.append(item)
+    
+    result.putdata(new_data)
+    return result
 
 def add_outline_and_shadow(im: Image.Image, stroke_px: int = 3, add_shadow: bool = True) -> Image.Image:
     """
