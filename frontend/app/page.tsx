@@ -41,6 +41,7 @@ export default function Page() {
   const [scale, setScale] = useState<number>(0.30); // 20%–50%, default 30%
   const [anchor, setAnchor] = useState("left_shoulder");
   const [shadow, setShadow] = useState(true);       // applied once during cutout
+  const [flipHorizontal, setFlipHorizontal] = useState(false); // NEW: flip state
 
   // Canvas + dragging
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -54,7 +55,7 @@ export default function Page() {
   useEffect(() => {
     draw();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pfpImg, cutoutImg, scale, stickerPos]);
+  }, [pfpImg, cutoutImg, scale, stickerPos, flipHorizontal]); // Added flipHorizontal to dependencies
 
   /* Draw base + sticker on the canvas */
   function draw() {
@@ -62,7 +63,7 @@ export default function Page() {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
 
-    // Use PFP’s natural resolution so downloads are crisp
+    // Use PFP's natural resolution so downloads are crisp
     canvas.width = pfpImg.naturalWidth;
     canvas.height = pfpImg.naturalHeight;
 
@@ -70,12 +71,24 @@ export default function Page() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(pfpImg, 0, 0);
 
-    // Sticker
+    // Sticker with flip support
     if (cutoutImg) {
       const targetW = Math.round(canvas.width * scale);
       const ratio = targetW / cutoutImg.naturalWidth;
       const targetH = Math.round(cutoutImg.naturalHeight * ratio);
-      ctx.drawImage(cutoutImg, stickerPos.x, stickerPos.y, targetW, targetH);
+      
+      ctx.save(); // Save the current context state
+      
+      if (flipHorizontal) {
+        // Flip horizontally around the center of the sticker
+        ctx.translate(stickerPos.x + targetW / 2, stickerPos.y + targetH / 2);
+        ctx.scale(-1, 1);
+        ctx.drawImage(cutoutImg, -targetW / 2, -targetH / 2, targetW, targetH);
+      } else {
+        ctx.drawImage(cutoutImg, stickerPos.x, stickerPos.y, targetW, targetH);
+      }
+      
+      ctx.restore(); // Restore the context state
     }
   }
 
@@ -192,6 +205,20 @@ export default function Page() {
     setStickerPos({ x: newX, y: newY });
   }
 
+  /* Toggle flip and auto-switch shoulder anchor */
+  function toggleFlip() {
+    setFlipHorizontal(!flipHorizontal);
+    
+    // Auto-switch between left and right shoulder when flipping
+    if (anchor === "left_shoulder") {
+      setAnchor("right_shoulder");
+      setTimeout(() => setStickerPos(computeAnchorPosition(scale)), 0);
+    } else if (anchor === "right_shoulder") {
+      setAnchor("left_shoulder");
+      setTimeout(() => setStickerPos(computeAnchorPosition(scale)), 0);
+    }
+  }
+
   /* Download composed PNG directly from the canvas */
   function downloadPNG() {
     const canvas = canvasRef.current!;
@@ -261,8 +288,25 @@ export default function Page() {
               Add shadow (applied once when you press Compose)
             </label>
 
+            <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+              <input
+                type="checkbox"
+                checked={flipHorizontal}
+                onChange={(e) => setFlipHorizontal(e.target.checked)}
+              />
+              Flip Hypao horizontally
+            </label>
+
             <button className="primary" onClick={prepare} style={{ marginTop: 10 }}>
               Compose
+            </button>
+
+            <button 
+              onClick={toggleFlip} 
+              style={{ marginTop: 10 }}
+              disabled={!cutoutImg}
+            >
+              Flip & Switch Shoulder
             </button>
 
             <p className="small" style={{ marginTop: 10 }}>
@@ -283,7 +327,7 @@ export default function Page() {
                   onMouseLeave={onMouseLeave}
                 />
               ) : (
-                <span className="small">Your composed image will appear here after you click “Compose”.</span>
+                <span className="small">Your composed image will appear here after you click "Compose".</span>
               )}
             </div>
 
