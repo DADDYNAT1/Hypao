@@ -3,9 +3,43 @@ from typing import Tuple
 import numpy as np
 from rembg import remove
 
-def remove_bg(img: Image.Image) -> Image.Image:
-    """Use rembg to remove background and return RGBA image."""
-    return remove(img.convert("RGBA"))
+def has_transparency(img: Image.Image) -> bool:
+    """Check if an image already has transparency (useful alpha channel)."""
+    if img.mode != "RGBA":
+        return False
+    alpha = img.split()[-1]
+    # Check if alpha channel has any non-255 values (actual transparency)
+    return any(px < 255 for px in alpha.getdata())
+
+def remove_bg(img: Image.Image, use_alpha_matting: bool = True) -> Image.Image:
+    """
+    Use rembg to remove background and return RGBA image.
+    Alpha matting helps preserve more detail for complex images.
+    """
+    # Convert to RGBA first
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+    
+    # If already has transparency, just return it
+    if has_transparency(img):
+        return img
+    
+    # Use alpha matting for better edge quality and detail preservation
+    if use_alpha_matting:
+        # Alpha matting parameters tuned for preserving character details
+        result = remove(
+            img, 
+            alpha_matting=True,
+            alpha_matting_foreground_threshold=270,  # Higher = keeps more of the subject
+            alpha_matting_background_threshold=0,    # Lower = removes more background
+            alpha_matting_erode_size=0,             # Don't erode, preserve all details
+            only_mask=False
+        )
+    else:
+        # Fallback to simple removal
+        result = remove(img)
+    
+    return result.convert("RGBA")
 
 def add_outline_and_shadow(im: Image.Image, stroke_px: int = 3, add_shadow: bool = True) -> Image.Image:
     """
@@ -14,14 +48,15 @@ def add_outline_and_shadow(im: Image.Image, stroke_px: int = 3, add_shadow: bool
     """
     if im.mode != "RGBA":
         im = im.convert("RGBA")
+    
     alpha = im.split()[-1]
-
+    
     # Stroke (white border)
     stroke = ImageOps.expand(alpha, border=stroke_px, fill=255)
     stroke = stroke.filter(ImageFilter.GaussianBlur(1))
     stroke_img = Image.new("RGBA", stroke.size, (255, 255, 255, 0))
     stroke_img.putalpha(stroke)
-
+    
     # Shadow (soft, slightly larger)
     base = Image.new("RGBA", stroke.size, (0, 0, 0, 0))
     if add_shadow:
@@ -32,12 +67,13 @@ def add_outline_and_shadow(im: Image.Image, stroke_px: int = 3, add_shadow: bool
         sh_img.putalpha(shadow)
         # Blend shadow under everything
         base.alpha_composite(sh_img, (0, 0))
-
+    
     # Put stroke, then original image centered
     base.alpha_composite(stroke_img, (0, 0))
     cx = (stroke_img.width - im.width) // 2
     cy = (stroke_img.height - im.height) // 2
     base.alpha_composite(im, (cx, cy))
+    
     return base
 
 def place_on_base(
@@ -53,12 +89,12 @@ def place_on_base(
     xy_pct: (x%, y%) override in 0..1; centers sticker on that point
     """
     W, H = base.size
-
+    
     # Resize sticker to target width
     target_w = int(W * scale)
     ratio = target_w / sticker.width
     sticker = sticker.resize((target_w, int(sticker.height * ratio)), Image.LANCZOS)
-
+    
     # Manual placement (percent of base image)
     if xy_pct is not None:
         x = int(W * xy_pct[0]) - sticker.width // 2
@@ -72,7 +108,7 @@ def place_on_base(
             "lower_right":    (int(W * 0.75) - sticker.width // 2, int(H * 0.78) - sticker.height // 2),
         }
         x, y = anchors.get(anchor, anchors["left_shoulder"])
-
+    
     out = base.convert("RGBA").copy()
     out.alpha_composite(sticker, (x, y))
     return out
